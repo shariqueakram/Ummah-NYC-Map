@@ -23,8 +23,7 @@
                 center: { lat: 40.7128, lng: -74.0060 },
                 zoom: 12,
             });
-
-            // Function to add marker to the map
+    
             function addMarker(location) {
                 new google.maps.Marker({
                     position: location,
@@ -32,8 +31,7 @@
                     title: document.getElementById('name').value,
                 });
             }
-
-            // Handle form submission
+    
             document.getElementById('add-location-form').addEventListener('submit', function(event) {
                 event.preventDefault();
                 const name = document.getElementById('name').value;
@@ -41,15 +39,24 @@
                 const lat = parseFloat(document.getElementById('lat').value);
                 const lng = parseFloat(document.getElementById('lng').value);
                 const location = { lat, lng };
-
-                // Add marker to the map
+    
                 addMarker(location);
-
-                // Reset form
+    
+                // Send data to the server
+                fetch('/add-location', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Nonce': '<%= nonce %>'
+                    },
+                    body: JSON.stringify({ name, type, lat, lng })
+                }).then(response => response.text())
+                  .then(data => console.log(data));
+    
                 event.target.reset();
             });
         }
-
+    
         window.initMap = initMap;
     </script>
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDRd0yRIxinJbPpzef4zA2QOU-8r_edt7w&callback=initMap" nonce="<%= nonce %>"></script>
