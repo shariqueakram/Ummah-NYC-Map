@@ -1,19 +1,57 @@
-<!Doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF -8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NYC Muslim Friendly Map Key</title>
+    <title>Halal Friendly Map</title>
     <link rel="stylesheet" href="style.css">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://maps.googleapis.com 'nonce-<%= nonce %>'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
 </head>
 <body>
-    <h1>Muslim friendly travel places around NYC</h1>
-    <div id="map"></div>
-    <script src="script.js"></script>
-<script 
-src="https://maps.googleapis.com/maps/api/js?
-key=AIzaSyDeqvvCnUORk_VNLu7k_ubktLB7rJtw0qU&map_ids=75851ff91bc5e98a
-&callback=initMap">
-</script>
+    <h1>Muslim Friendly Places in NYC</h1>
+    <div id="map" style="height: 500px; width: 100px;"></div>
+    <form id="add-location-form">
+        <input type="text" id="name" placeholder="Place Name" required>
+        <input type="text" id="type" placeholder="Type (e.g., Restaurant, Mosque)" required>
+        <input type="text" id="lat" placeholder="Latitude" required>
+        <input type="text" id="lng" placeholder="Longitude" required>
+        <button type="submit">Add Location</button>
+    </form>
+    <script nonce="<%= nonce %>">
+        function initMap() {
+            const map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 40.7128, lng: -74.0060 },
+                zoom: 12,
+            });
+
+            // Function to add marker to the map
+            function addMarker(location) {
+                new google.maps.Marker({
+                    position: location,
+                    map: map,
+                    title: document.getElementById('name').value,
+                });
+            }
+
+            // Handle form submission
+            document.getElementById('add-location-form').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const name = document.getElementById('name').value;
+                const type = document.getElementById('type').value;
+                const lat = parseFloat(document.getElementById('lat').value);
+                const lng = parseFloat(document.getElementById('lng').value);
+                const location = { lat, lng };
+
+                // Add marker to the map
+                addMarker(location);
+
+                // Reset form
+                event.target.reset();
+            });
+        }
+
+        window.initMap = initMap;
+    </script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDRd0yRIxinJbPpzef4zA2QOU-8r_edt7w&callback=initMap" nonce="<%= nonce %>"></script>
 </body>
 </html>
