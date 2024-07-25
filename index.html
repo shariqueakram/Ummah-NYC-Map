@@ -3,18 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Halal Friendly Map</title>
     <link rel="stylesheet" href="style.css">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://maps.googleapis.com 'nonce-<%= nonce %>'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
+<!---    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://maps.googleapis.com 'nonce-<%= nonce %>'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">  Will remove comment once code is ready to go-->
 </head>
 <body>
     <h1>Muslim Friendly Places in NYC</h1>
-    <div id="map" style="height: 500px; width: 100px;"></div>
+    <div id="map-container">
+    <div id="map"></div>
     <form id="add-location-form">
         <input type="text" id="name" placeholder="Place Name" required>
-        <input type="text" id="type" placeholder="Type (e.g., Restaurant, Mosque)" required>
-        <input type="text" id="lat" placeholder="Latitude" required>
-        <input type="text" id="lng" placeholder="Longitude" required>
+        <input type="text" id="type" placeholder="Type (e.g., Restaurant, Masjid)" required>
+        <input type="text" id="address" placeholder="Address" required>
         <button type="submit">Add Location</button>
     </form>
     <script nonce="<%= nonce %>">
@@ -23,40 +22,57 @@
                 center: { lat: 40.7128, lng: -74.0060 },
                 zoom: 12,
             });
-    
-            function addMarker(location) {
+
+            function addMarker(location, title) {
                 new google.maps.Marker({
                     position: location,
                     map: map,
-                    title: document.getElementById('name').value,
+                    title: title,
                 });
             }
-    
-            document.getElementById('add-location-form').addEventListener('submit', function(event) {
+
+            function geocodeAddress(geocoder, address) {
+                return new Promise((resolve, reject) => {
+                    geocoder.geocode({ address: address }, (results, status) => {
+                        if (status === 'OK') {
+                            resolve(results[0].geometry.location);
+                        } else {
+                            reject('Geocode was not successful for the following reason(s): ' + status);
+                        }
+                    });
+                });
+            }
+
+            const geocoder = new google.maps.Geocoder();
+
+            document.getElementById('add-location-form').addEventListener('submit', async function(event) {
                 event.preventDefault();
                 const name = document.getElementById('name').value;
                 const type = document.getElementById('type').value;
-                const lat = parseFloat(document.getElementById('lat').value);
-                const lng = parseFloat(document.getElementById('lng').value);
-                const location = { lat, lng };
-    
-                addMarker(location);
-    
-                // Send data to the server
-                fetch('/add-location', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Nonce': '<%= nonce %>'
-                    },
-                    body: JSON.stringify({ name, type, lat, lng })
-                }).then(response => response.text())
-                  .then(data => console.log(data));
-    
+                const address = document.getElementById('address').value;
+
+                try {
+                    const location = await geocodeAddress(geocoder, address);
+                    addMarker(location, name);
+
+                    // Send data to the server
+                    fetch('/add-location', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Nonce': '<%= nonce %>'
+                        },
+                        body: JSON.stringify({ name, type, lat: location.lat(), lng: location.lng() })
+                    }).then(response => response.text())
+                      .then(data => console.log(data));
+                } catch (error) {
+                    console.error(error);
+                }
+
                 event.target.reset();
             });
         }
-    
+
         window.initMap = initMap;
     </script>
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDRd0yRIxinJbPpzef4zA2QOU-8r_edt7w&callback=initMap" nonce="<%= nonce %>"></script>
